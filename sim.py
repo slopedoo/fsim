@@ -7,6 +7,7 @@
 
 import csv
 import os
+import unicodedata
 from datetime import date
 from datetime import datetime
 
@@ -127,6 +128,8 @@ def search_player(search_string):
         for row in reader:
             #print(row[1])
             for field in row:
+                field = ''.join(c for c in unicodedata.normalize('NFD', field)
+                        if unicodedata.category(c) != 'Mn')
                 if search_string.capitalize() in field:
                     player_output(row[0],row[1],row[2],row[3],row[4],row[5])
 

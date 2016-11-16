@@ -33,11 +33,23 @@ class Player(object):
 
 class Club(object):
 
-    def __init__(self, name, country, reputation, players):
+    def __init__(self, name, country, reputation):
         self.name = name
         self.country = country
         self.reputation = reputation
-        self.players = players
+        self.composition = {
+                'forward' : [],
+                'midfielder' : [],
+                'defender' : [],
+                'goalkeeper' : []
+                }
+
+    def add_player(self, name, number, position):
+        if position.lower() not in self.composition:
+            print("Only",join(self.composition.keys()),"allowed.")
+        else:
+            self.composition[position].append((name,number,position))
+            print("Added",name,"to the team.")
 
 class League(object):
 

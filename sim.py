@@ -14,13 +14,14 @@ from datetime import datetime
 #from pudb import set_trace; set_trace()
 
 CONST_VERSION = "0.1"
+CONST_SEASON = "2016/2017"
 CONST_PLAYERS_PER_TEAM = 11
 CONST_TEAMS_PER_LEAGUE = 20
 CONST_MINS_PER_GAME = 90
 CONST_PLAYER_DB = 'player_db.csv'
 CONST_TEAM_DB = 'team_db.csv'
 
-#-------------  class definitions
+#-------------  class definitions -------------
 
 class Player(object):
 
@@ -40,31 +41,31 @@ class Player(object):
 
 
 class Club(object):
+
     def __init__(self, name, country, reputation):
         self.name = name
         self.country = country
         self.reputation = reputation
-        self.squad = {
-                'forward' : [],
-                'midfielder' : [],
-                'defender' : [],
-                'goalkeeper' : []
-                }
+        self.squad = []
         self.points = 0
         self.wins = 0
         self.draws = 0
         self.losses = 0
 
-    def add_player(self, name, number, position):
-        if position.lower() not in self.squad:
-            print("Only",join(self.squad.keys()),"allowed.")
-        else:
-            self.squad[position].append((name,number,position))
-            print("Added",name,"to the team.")
+    def win(self):
+        self.points = self.points + 3
+        self.wins = self.wins + 1
+
+    def draw(self):
+        self.points = self.points + 1
+        self.draws = self.draws + 1
+
+    def loss(self):
+        self.losses = self.losses + 1
 
 class League(object):
 
-    def __init__(self, name, country, reputation, teams):
+    def __init__(self, name, country, reputation, clubs):
         self.name = name
         self.country = country
         self.reputation = reputation
@@ -90,7 +91,7 @@ class Match(object):
     def play_match(self):
         pass
 
-#------------- function definitions
+#------------- function definitions -------------
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -103,7 +104,10 @@ def print_help():
             "help\t\t\tShow this help dialog\n",
             "clear\t\t\tClear the screen\n",
             "player search\t\tSearch for a player using name, team or country\n",
-            "team search\t\tSearch for a team using name")
+            "team search\t\tSearch for a team using name\n",
+            "roster search\t\tSearch for a team's roster\n",
+            "print table\t\tPrint the season's league table"
+    )
 
 def player_output(name, country, dob, club, position, number):
     age = calculate_age(dob)
@@ -116,6 +120,14 @@ def player_output(name, country, dob, club, position, number):
             "\n  |  \tClub:\t\t",club,
             "\n  |_______________________________________________________________________________")
 
+def print_league_table():
+    print("")
+    for i in range(CONST_TEAMS_PER_LEAGUE):
+        sys.stdout.write("   {:<25}{:<5}{:<5}{:1}{:8}\n".format(
+            clubs[i].name,clubs[i].wins,clubs[i].losses,clubs[i].draws,clubs[i].points))
+    print("")
+
+# get age from DOB
 def calculate_age(born):
     born = datetime.strptime(born, '%d/%m/%Y')
     today = date.today()
@@ -124,8 +136,59 @@ def calculate_age(born):
     elapsed_years = years_difference - int(is_before_birthday)
     return elapsed_years
 
-def choose_team():
-    pass
+# add teams from DB to array of Clubs objects
+def populate_league():
+    with open(CONST_TEAM_DB, 'rt') as f:
+        reader = csv.reader(f, delimiter=',')
+        for row in reader:
+            for field in row:
+                clubs.append(Club(row[0],row[1],row[2])) # add club to to clubs array
+                break
+
+# add players to the clubs in the clubs[] array of objects
+def populate_teams():
+    with open(CONST_PLAYER_DB, 'rt') as f:
+        reader = csv.reader(f, delimiter=',')
+        for row in reader:
+            exit_flag = False
+            for field in row:
+                for i in range(CONST_TEAMS_PER_LEAGUE):
+                    if exit_flag:
+                        break
+                    elif clubs[i].name == row[3].upper():   # find the correct club
+                        clubs[i].squad.append((row[0],row[1],row[2],row[3],row[4],row[5])) # add player to the club
+                        exit_flag = True
+                break
+
+# search csv file for players
+def search_player(search_string):
+    with open(CONST_PLAYER_DB, 'rt') as f:
+        reader = csv.reader(f, delimiter=',')
+        print("\n   Search Results:")
+        for row in reader:
+            for field in row:
+                field = ''.join(c for c in unicodedata.normalize('NFD', field)
+                        if unicodedata.category(c) != 'Mn') # remove accents from search results for easier searching
+                if search_string.capitalize() in field:
+                    player_output(row[0],row[1],row[2],row[3],row[4],row[5])
+
+# search club and print the roster
+def search_club(club, clubs):
+    template = "{0:>8}{1:1}{2:30}{3:15}{4:4}{5:>20}"
+    for i in range(CONST_TEAMS_PER_LEAGUE):
+        if club.upper() in clubs[i].name:
+            print("\n")
+            print("        ", clubs[i].name, "FULL SQUAD ROSTER")
+            print("        ", CONST_SEASON, "SEASON")
+            print("")
+            print(template.format("NUMBER", "", "NAME", "POSITION", " AGE", "COUNTRY"))
+            for j in range(len(clubs[i].squad)):
+                print(template.format(
+                    clubs[i].squad[j][5]," ",
+                    clubs[i].squad[j][0],
+                    clubs[i].squad[j][4],
+                    calculate_age(clubs[i].squad[j][2]),
+                    clubs[i].squad[j][1]))
 
 def sub(sub_out, sub_in):
     sub_out = sub_out
@@ -138,61 +201,12 @@ def sub(sub_out, sub_in):
         else:
             print("That player is not on the field.")
 
-def populate_league():
-    with open(CONST_TEAM_DB, 'rt') as f:
-        reader = csv.reader(f, delimiter=',')
-        for row in reader:
-            for field in row:
-                clubs.append(Club(row[0],row[1],row[2]))
-                break
-
-def populate_teams():
-    with open(CONST_PLAYER_DB, 'rt') as f:
-        reader = csv.reader(f, delimiter=',')
-        for row in reader:
-            exit_flag = False
-            for field in row:
-                for i in range(CONST_TEAMS_PER_LEAGUE):
-                    if exit_flag:
-                        break
-                    elif clubs[i].name == row[3].upper():
-                        #row[4] is position
-                        pos = row[4].lower()
-                        clubs[i].squad[pos].append((row[0],row[1],row[2],row[3],row[4],row[5]))
-                        exit_flag = True
-                break
-
-# search csv file for players
-def search_player(search_string):
-    if search_string == "":
-        print(" Please enter a search string.")
-        return
-    with open(CONST_PLAYER_DB, 'rt') as f:
-        reader = csv.reader(f, delimiter=',')
-        print("\n   Search Results:")
-        for row in reader:
-            for field in row:
-                field = ''.join(c for c in unicodedata.normalize('NFD', field)
-                        if unicodedata.category(c) != 'Mn')
-                if search_string.capitalize() in field:
-                    player_output(row[0],row[1],row[2],row[3],row[4],row[5])
-
-def print_league_table():
-    print("")
-    for i in range(CONST_TEAMS_PER_LEAGUE):
-        sys.stdout.write("   {:<25}{:<5}{:<5}{:1}{:8}\n".format(
-            clubs[i].name,clubs[i].wins,clubs[i].losses,clubs[i].draws,clubs[i].points))
-    print("")
-
-def search_team():
-    pass
 
 
-#------------- main program
+#------------- main program -------------
 clubs = []
 populate_league()
 populate_teams()
-
 clear_screen()
 while True:
     inp = input("\nWhat would you like to do? ")
@@ -205,14 +219,29 @@ while True:
         print("\n Search for a player using name, club or country. Type back to return to main menu.")
         search_string = ""
         while search_string.lower() != "back":
-            search_string = input("\n Enter search query: ")
+            if search_string.lower() == "clear":
+                clear_screen()
+            elif search_string == "":
+                print(" Please enter a search string.")
+            search_string = input("\n Enter player to search for: ")
             search_player(search_string)
+        return
         clear_screen()
     elif inp.lower() == "team search":
         search_team()
     elif inp.lower() == "print table":
         print_league_table()
-    elif inp.lower() == "print team players":
-            print(clubs[3].squad['forward'][1][0])
+    elif inp.lower() == "roster search":
+        print("\n Search for a club's roster using the club name. Type back to return to main menu.")
+        search_string = ""
+        while search_string.lower() != "back":
+            if search_string.lower() == "clear":
+                clear_screen()
+            elif search_string.lower() == "":
+                print("Please enter a valid search string.")
+            search_string = input("\n Enter team to search for: ")
+            search_club(search_string, clubs)
+        clear_screen()
+        search_club(search_string, clubs)
     else:
         print("Could not find", inp, "\nType help to see available commands.")

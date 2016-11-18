@@ -81,9 +81,21 @@ class Country(object):
 class Match(object):
 
     def __init__(self, home, away, date):
-        self.home = home
-        self.away = away
+        self.home_team = home
+        self.away_team = away
         self.date = date
+
+    def home_squad(self, home_gk, home_def, home_mid, home_fwd):
+        self.home_gk = home_gk
+        self.home_def = []
+        self.home_mid = []
+        self.home_fwd = []
+
+    def away_squad(self, away_gk, away_def, away_mid, away_fwd):
+        self.away_gk = away_gk
+        self.away_def = []
+        self.away_mid = []
+        self.away_fwd = []
 
     def result(self):
         self.result = result
@@ -92,6 +104,55 @@ class Match(object):
         pass
 
 #------------- function definitions -------------
+
+def pick_match_squad(club,match):
+    # going with a 4-4-2 formation, option of changing formation will come later
+    formation = "442"
+    num_gk = 1
+    num_def = formation[0]
+    num_mid = formation[1]
+    num_fwd = formation[2]
+    if match.home_team == club.name:
+        for i in range(num_gk):
+            match.home_squad.home_gk = input("Starting goalkeeper: ")
+        for i in range(num_def):
+            choice = input("Add defender no.", i, "of", num_def)
+            for i in range(int(club.squad)):
+                if choice.capitalize() == club.squad[i][0] and club.squad[i][4].lower() == 'defender':
+                    match.home_squad.home_def.append(choice.capitalize())
+        for i in range(num_mid):
+            choice = input("Add midfielder no.", i, "of", num_mid)
+            for i in range(int(club.squad)):
+                if choice.capitalize() == club.squad[i][0] and club.squad[i][4].lower() == 'midfielder':
+                    match.home_squad.home_mid.append(choice.capitalize())
+        for i in range(num_fwd):
+            choice = input("Add forward no.", i, "of", num_fwd)
+            for i in range(int(club.squad)):
+                if choice.capitalize() == club.squad[i][0] and club.squad[i][4].lower() == 'forward':
+                    match.home_squad.home_fwd.append(choice.capitalize())
+    elif match.away_team == club.name:
+        for i in range(num_gk):
+            match.away_squad.away_gk = input("Starting goalkeeper: ")
+        for i in range(num_def):
+            choice = input("Add defender no.", i, "of", num_def)
+            for i in range(int(club.squad)):
+                if choice.capitalize() == club.squad[i][0] and club.squad[i][4].lower() == 'defender':
+                    match.away_squad.away_def.append(choice.capitalize())
+        for i in range(num_mid):
+            choice = input("Add midfielder no.", i, "of", num_mid)
+            for i in range(int(club.squad)):
+                if choice.capitalize() == club.squad[i][0] and club.squad[i][4].lower() == 'midfielder':
+                    match.away_squad.away_mid.append(choice.capitalize())
+        for i in range(num_fwd):
+            choice = input("Add forward no.", i, "of", num_fwd)
+            for i in range(int(club.squad)):
+                if choice.capitalize() == club.squad[i][0] and club.squad[i][4].lower() == 'forward':
+                    match.away_squad.away_fwd.append(choice.capitalize())
+    else:
+        print("Something bad happened.")
+
+def initiate_match(away_team, home_team, date):
+    pass
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -105,7 +166,7 @@ def print_help():
             "clear\t\t\tClear the screen\n",
             "player search\t\tSearch for a player using name, team or country\n",
             "team search\t\tSearch for a team using name\n",
-            "roster search\t\tSearch for a team's roster\n",
+            "squad list\t\tSearch for a team to display the squad list\n",
             "print table\t\tPrint the season's league table"
     )
 
@@ -202,7 +263,6 @@ def sub(sub_out, sub_in):
             print("That player is not on the field.")
 
 
-
 #------------- main program -------------
 clubs = []
 populate_league()
@@ -231,8 +291,8 @@ while True:
         search_team()
     elif inp.lower() == "print table":
         print_league_table()
-    elif inp.lower() == "roster search":
-        print("\n Search for a club's roster using the club name. Type back to return to main menu.")
+    elif inp.lower() == "squad list":
+        print("\n Search for a club's squad list using the club name. Type back to return to main menu.")
         search_string = ""
         while search_string.lower() != "back":
             if search_string.lower() == "clear":

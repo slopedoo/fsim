@@ -96,136 +96,98 @@ class Match(object):
         self.away_squad_mid = []
         self.away_squad_fwd = []
 
-    def home_squad(self, formation, club):
-        choice = input("Starting goalkeeper: ")
+    def pick_squad(self, formation, club, side):
         squad_size = len(club.squad)
-        print(squad_size)
-        fail_flag = False
-        for i in range(squad_size):   # todo: optimize range to the relevant positions instead of whole squad
-            if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'goalkeeper':
-                self.home_squad_gk.append(club.squad[i])
-                print("You added",club.squad[i])
-                break
-            else:
-                print("Player not found. Try again.")
-                choice = input("Starting goalkeeper: ")
-        j = 0
-        while j < int(formation[0]):
-            print("Add defender", j+1, "of", formation[0])
-            choice = input()
-            for i in range(squad_size):
-                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'defender':
-                    self.home_squad_def.append(club.squad[i])
-                    print("You added",club.squad[i])
-                    fail_flag = False
-                    break
-                elif i == squad_size-1:
-                    fail_flag = True
-            if fail_flag:
-                print("Player not found. Try again.")
-            else:
-                j += 1
-        j = 0
-        while j < int(formation[1]):
-            print("Add midfielder", j+1, "of", formation[0])
-            choice = input()
-            for i in range(squad_size):
-                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'midfielder':
-                    self.home_squad_mid.append(club.squad[i])
-                    print("You added",club.squad[i])
-                    fail_flag = False
-                    break
-                elif i == squad_size-1:
-                    fail_flag = True
-            if fail_flag:
-                print("Player not found. Try again.")
-            else:
-                j += 1
-        j = 0
-        while j < int(formation[2]):
-            print("Add forward", j+1, "of", formation[0])
-            choice = input()
-            for i in range(squad_size):
-                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'forward':
-                    self.home_squad_fwd.append(club.squad[i])
-                    print("You added",club.squad[i])
-                    fail_flag = False
-                    break
-                elif i == squad_size-1:
-                    fail_flag = True
-            if fail_flag:
-                print("Player not found. Try again.")
-            else:
-                j += 1
+        print(player_by_position('goalkeeper', club, squad_size))
+        self.pick_player(squad_size, club, 'goalkeeper', side, formation)
+        print(player_by_position('defender', club, squad_size))
+        self.pick_player(squad_size, club, 'defender', side, formation)
+        print(player_by_position('midfielder', club, squad_size))
+        self.pick_player(squad_size, club, 'midfielder', side, formation)
+        print(player_by_position('forward', club, squad_size))
+        self.pick_player(squad_size, club, 'forward', side, formation)
 
-    def away_squad(self, formation, club):
-        choice = input("Starting goalkeeper: ")
-        squad_size = len(club.squad)
-        print(squad_size)
-        exit_flag = False
-        fail_flag = False
-        for i in range(squad_size):   # todo: optimize range to the relevant positions instead of whole squad
-            if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'goalkeeper':
-                self.away_squad_gk.append(club.squad[i])
-                print("You added",club.squad[i])
-                break
-            else:
-                print("Player not found. Try again.")
-                choice = input("Starting goalkeeper: ")
+    def pick_player(self, squad_size, club, pos, side, formation):
         j = 0
-        while j < int(formation[0]):
-            print("Add defender", j+1, "of", formation[0])
-            choice = input()
-            exit_flag = False
-            for i in range(squad_size):
-                if exit_flag:
-                    break
-                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'defender':
-                    self.away_squad_def.append(club.squad[i])
-                    print("You added",club.squad[i])
-                    exit_flag = True
-                elif i == squad_size-1:
-                    fail_flag = True
-            if fail_flag:
-                print("Player not found. Try again.")
-            else:
-                j += 1
         i = 0
-        while j < int(formation[1]):
-            print("Add midfielder", j+1, "of", formation[0])
+        picked = []
+        f = 0
+        if pos == 'defender':
+            f = formation[0]
+        elif pos == 'midfielder':
+            f = formation[1]
+        elif pos == 'forward':
+            f = formation[2]
+        elif pos == 'goalkeeper':
+            f = 1
+        while j < int(f):
+            print("Add", pos.lower(), j+1, "of", f)
             choice = input()
-            exit_flag = False
             for i in range(squad_size):
-                if exit_flag:
-                    break
-                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'midfielder':
-                    self.away_squad_mid.append(club.squad[i])
-                    print("You added",club.squad[i])
-                    exit_flag = True
+                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == pos:
+                    if any(choice.capitalize() in s for s in picked):
+                        print("\n", club.squad[i][0], "is already picked.") # don't let user add player twice
+                        fail_flag = True
+                    elif side.lower() == 'home': # check if home or away side
+                        if pos.lower() == 'defender':
+                            self.home_squad_def.append(club.squad[i]) # append picked player to the match squad
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        elif pos.lower() == 'midfielder':
+                            self.home_squad_mid.append(club.squad[i])
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        elif pos.lower() == 'forward':
+                            self.home_squad_fwd.append(club.squad[i])
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        elif pos.lower() == 'goalkeeper':
+                            self.home_squad_gk.append(club.squad[i])
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        else:
+                            print("Something has gone wrong.")
+                    elif side.lower() == 'away':
+                        if pos.lower() == 'defender':
+                            self.away_squad_def.append(club.squad[i]) # append picked player to the match squad
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        elif pos.lower() == 'midfielder':
+                            self.away_squad_mid.append(club.squad[i])
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        elif pos.lower() == 'forward':
+                            self.away_squad_fwd.append(club.squad[i])
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        elif pos.lower() == 'goalkeeper':
+                            self.away_squad_gk.append(club.squad[i])
+                            picked.append(club.squad[i][0])
+                            print("You added", club.squad[i])
+                            fail_flag = False
+                            break
+                        else:
+                            print("Something has gone wrong.")
                 elif i == squad_size-1:
                     fail_flag = True
             if fail_flag:
-                print("Player not found. Try again.")
+                print(" Try again.\n")
             else:
-                j += 1
-        i = 0
-        while j < int(formation[2]):
-            print("Add forward", j+1, "of", formation[0])
-            choice = input()
-            exit_flag = False
-            for i in range(squad_size):
-                if exit_flag:
-                    break
-                if choice.capitalize() in club.squad[i][0] and club.squad[i][4].lower() == 'forward':
-                    self.away_squad_fwd.append(club.squad[i])
-                    print("You added",club.squad[i])
-                    exit_flag = True
-                elif i == squad_size-1:
-                    fail_flag = True
-            if fail_flag:
-                print("Player not found. Try again.")
-            else:
-                j += 1
+                j+=1
 
     def result(self):
         self.result = result
@@ -235,13 +197,18 @@ class Match(object):
 
 #------------- function definitions -------------
 
+def player_by_position(pos, club, squad_size):
+    for i in range(squad_size):
+        if club.squad[i][4].lower() == pos:
+            print(club.squad[i][0], club.squad[i][1], club.squad[i][2], club.squad[i][3], club.squad[i][4], club.squad[i][5])
+
 def pick_match_squad(club,match):
     # going with a 4-4-2 formation, option of changing formation will come later
     formation = "442"
     if match.home_team == club.name:
-        match.home_squad(formation,club)
+        match.pick_squad(formation,club, 'home')
     elif match.away_team == club.name:
-        match.home_squad(formation,club)
+        match.pick_squad(formation,club, 'away')
     else:
         print("Something bad happened.")
 

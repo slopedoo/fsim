@@ -53,15 +53,15 @@ class Club(object):
         self.losses = 0
 
     def win(self):
-        self.points = self.points + 3
-        self.wins = self.wins + 1
+        self.points += 3
+        self.wins += 1
 
     def draw(self):
-        self.points = self.points + 1
-        self.draws = self.draws + 1
+        self.points += 1
+        self.draws += 1
 
     def loss(self):
-        self.losses = self.losses + 1
+        self.losses += 1
 
 class League(object):
 
@@ -85,6 +85,7 @@ class Match(object):
         self.away_team = away
         self.date = date
 
+        # these should be made into one home_squad dict instead of several lists
         self.home_squad_gk = []
         self.home_squad_def = []
         self.home_squad_mid = []
@@ -118,9 +119,9 @@ class Match(object):
         picked = []
         prev_pos = 0
         num_pos = count_pos(club,pos) # number of players in the position
-        print(player_by_position(pos, club, squad_size))
+        print(player_by_position(pos, club))
         if pos == 'defender':
-            f = formation[0] # the number of positions available
+            f = formation[0] # f = number of positions available
             prev_pos = count_pos(club,'goalkeeper') # get start of search index
         elif pos == 'midfielder':
             f = formation[1]
@@ -130,46 +131,51 @@ class Match(object):
             prev_pos = count_pos(club,'midfielder')+count_pos(club,'defender')+count_pos(club,'goalkeeper')
         elif pos == 'goalkeeper':
             f = 1
-        num_pos = count_pos(club,pos)
         while j < int(f):
-            print("\n  Add", pos.lower(), j+1, "of", f)
+            print("\n  Add", pos.lower(), j+1, "of", f, "-- (", pos_names(pos,formation, j), ")")
             choice = input("  >")
             if choice == "cancel":
+                if side == 'home': # discard choices made if user cancels selection process
+                    self.home_squad_gk = self.home_squad_def = self.home_squad_mid = self.home_squad_fwd = []
+                elif side == 'away':
+                    self.away_squad_gk = self.away_squad_def = self.away_squad_mid = self.away_squad_fwd = []
                 return True
             elif choice == "":
                 print("  You didn't enter a player name. Try again. Type cancel to return to menu.")
             else:
-                i = prev_pos - 1         # get the start index   | this makes sure that we search
+                if i != 0:
+                    i = prev_pos - 1     # get the start index   | this makes sure that we search
                 tot = prev_pos-1+num_pos # end index             | only for player in the right position
                 while i <= tot:
                     player_name = club.squad[i][0].split() # split the name so the user can search either first or last name
-                    if choice.capitalize() == player_name[0] or choice.capitalize() == player_name[-1] and club.squad[i][4].lower() == pos:
-                        if any(choice.capitalize() in s for s in picked):
+                    full_name = player_name[0]+" "+player_name[-1]
+                    if choice.capitalize() == player_name[0] or choice.capitalize() == player_name[-1] or choice.title() == full_name and club.squad[i][4].lower() == pos:
+                        if any(club.squad[i][0] in s for s in picked):
                             print("\n", club.squad[i][0], "is already picked.") # don't let user add player twice
                             fail_flag = True
                         elif side.lower() == 'home': # check if home or away side
                             if pos.lower() == 'defender':
                                 self.home_squad_def.append(club.squad[i]) # append picked player to the match squad
                                 picked.append(club.squad[i][0]) # register that the player is picked
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             elif pos.lower() == 'midfielder':
                                 self.home_squad_mid.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             elif pos.lower() == 'forward':
                                 self.home_squad_fwd.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             elif pos.lower() == 'goalkeeper':
                                 self.home_squad_gk.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             else:
@@ -178,25 +184,25 @@ class Match(object):
                             if pos.lower() == 'defender':
                                 self.away_squad_def.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             elif pos.lower() == 'midfielder':
                                 self.away_squad_mid.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             elif pos.lower() == 'forward':
                                 self.away_squad_fwd.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             elif pos.lower() == 'goalkeeper':
                                 self.away_squad_gk.append(club.squad[i])
                                 picked.append(club.squad[i][0])
-                                print("You added", club.squad[i])
+                                print("\n    Added", club.squad[i][0], "as", pos_names(pos,formation,j))
                                 fail_flag = False
                                 break
                             else:
@@ -217,6 +223,31 @@ class Match(object):
 
 #------------- function definitions -------------
 
+def pos_names(pos, formation, j):
+    if pos == 'defender' and formation == '442':
+        if j == 0:
+            return("Right back")
+        elif j == 1:
+            return("Right central defender")
+        elif j == 2:
+            return("Left central defender")
+        elif j == 3:
+            return("Left back")
+    elif pos == 'midfielder' and formation == '442':
+        if j == 0:
+            return("Right midfielder")
+        elif j == 1:
+            return("Right central midfielder")
+        elif j == 2:
+            return("Left central midfielder")
+        elif j == 3:
+            return("Left midfielder")
+    elif pos == 'forward' and formation == '442':
+        if j == 0:
+            return("Right centre forward")
+        elif j == 1:
+            return("Left centre forward")
+
 def count_pos(club, pos):
     squad_size = len(club.squad)
     counter = 0
@@ -226,31 +257,77 @@ def count_pos(club, pos):
     return counter
 
 
-def view_match_squad(club, match):
-    if club.name.lower() == match.home_team.lower():
-        for i in range(len(match.home_squad_gk)):
-            print(match.home_squad_gk[i])
-        for i in range(len(match.home_squad_def)):
-            print(match.home_squad_def[i])
-        for i in range(len(match.home_squad_mid)):
-            print(match.home_squad_mid[i])
-        for i in range(len(match.home_squad_fwd)):
-            print(match.home_squad_fwd[i])
-    elif club.name.lower() == match.away_team.lower():
-        for i in range(len(match.away_squad_gk)):
-            print(match.away_squad_gk[i])
-        for i in range(len(match.away_squad_def)):
-            print(match.away_squad_def[i])
-        for i in range(len(match.away_squad_mid)):
-            print(match.away_squad_mid[i])
-        for i in range(len(match.away_squad_fwd)):
-            print(match.away_squad_fwd[i])
+def show_match_squad(club, match, formation):
+    if club.name.lower() == match.home_team.lower() and formation == '442':
+        print_442(match,'home')
+    elif club.name.lower() == match.away_team.lower() and formation == '442':
+        print_442(match,'away')
+
+def print_442(match, side):
+    template_gk = "{0:15}{1:20}{2:5}{3:20}{4:15}"
+    template = "{0:25}{1:25}{2:25}{3:25}"
+    if side == 'home':
+        if len(match.home_squad_gk) == 1 and len(match.home_squad_def) == 4 and \
+                len(match.home_squad_mid) == 4 and len(match.home_squad_fwd) == 2:
+            print("\n\n")
+            print(template_gk.format("","",match.home_squad_gk[0][0],"",""))
+            print("\n\n\n\n")
+            print(template.format(match.home_squad_def[0][0],
+                                  match.home_squad_def[1][0],
+                                  match.home_squad_def[2][0],
+                                  match.home_squad_def[3][0]))
+            print("\n\n\n\n")
+            print(template.format(match.home_squad_mid[0][0],
+                                  match.home_squad_mid[1][0],
+                                  match.home_squad_mid[2][0],
+                                  match.home_squad_mid[3][0]))
+            print("\n\n\n\n")
+            print(template.format("",
+                                  match.home_squad_fwd[0][0],
+                                  match.home_squad_fwd[1][0],
+                                  ""))
+            print("\n\n")
+        else:
+            print("  You haven't picked your line-up yet. Type <pick match squad> to start.")
+    elif side == 'away':
+        if len(match.away_squad_gk) == 1 and len(match.away_squad_def) == 4 and \
+                len(match.away_squad_mid) == 4 and len(match.away_squad_fwd) == 2:
+            print("\n\n")
+            print(template_gk.format("","",match.away_squad_gk[0][0],"",""))
+            print("\n\n")
+            print(template.format(match.away_squad_def[0][0],
+                                  match.away_squad_def[1][0],
+                                  match.away_squad_def[2][0],
+                                  match.away_squad_def[3][0]))
+            print("\n\n")
+            print(template.format(match.away_squad_mid[0][0],
+                                  match.away_squad_mid[1][0],
+                                  match.away_squad_mid[2][0],
+                                  match.away_squad_mid[3][0]))
+            print("\n\n")
+            print(template.format("",
+                                  match.away_squad_fwd[0][0],
+                                  match.away_squad_fwd[1][0],
+                                  ""))
+            print("\n\n")
+        else:
+            print("  You haven't picked your line-up yet. Type <pick match squad> to start.")
 
 
-def player_by_position(pos, club, squad_size):
-    for i in range(squad_size):
+
+def player_by_position(pos, club):
+    template = "{0:>8}{1:1}{2:30}{3:15}{4:4}{5:>20}"
+    print(" ", pos.upper())
+    print("")
+    print(template.format("NUMBER", "", "NAME", "POSITION", " AGE", "COUNTRY"))
+    for i in range(len(club.squad)):
         if club.squad[i][4].lower() == pos:
-            print(club.squad[i][0], club.squad[i][1], club.squad[i][2], club.squad[i][3], club.squad[i][4], club.squad[i][5])
+            print(template.format(
+                club.squad[i][5]," ",
+                club.squad[i][0],
+                club.squad[i][4],
+                calculate_age(club.squad[i][2]),
+                club.squad[i][1]))
 
 def pick_match_squad(club,match):
     # going with a 4-4-2 formation, option of changing formation will come later
@@ -279,9 +356,12 @@ def print_help():
     print("\n Available commands:\n",
             "help\t\t\tShow this help dialog\n",
             "clear\t\t\tClear the screen\n",
+            "exit\t\t\tExit the application\n",
             "player search\t\tSearch for a player using name, team or country\n",
             "team search\t\tSearch for a team using name\n",
             "squad list\t\tSearch for a team to display the squad list\n",
+            "pick match squad\tPick the squad for the next game\n",
+            "show match squad\tShow the line-up for the next game\n",
             "print table\t\tPrint the season's league table"
     )
 
@@ -385,7 +465,6 @@ populate_league()
 populate_teams()
 clear_screen()
 match_120816 = Match('CHELSEA','ARSENAL','12.08.2016')
-pick_match_squad(clubs[3], match_120816)
 while True:
     inp = input("\n  What would you like to do? ")
     if inp.lower() == "help":
@@ -423,6 +502,10 @@ while True:
     elif inp.lower() == "pick match squad":
         pick_match_squad(clubs[3], match_120816)
     elif inp.lower() == "show match squad":
-        view_match_squad(clubs[3], match_120816)
+        show_match_squad(clubs[3], match_120816, '442')
+    elif inp.lower() == "exit":
+        confirm = input("\n  Are you sure you want to exit? (Y/n)  ")
+        if confirm.lower() == 'y' or confirm.lower() == 'yes':
+            break
     else:
         print("\n  Could not find <", inp, ">\n  Type help to see available commands.")

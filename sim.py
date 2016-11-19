@@ -20,6 +20,7 @@ CONST_TEAMS_PER_LEAGUE = 20
 CONST_MINS_PER_GAME = 90
 CONST_PLAYER_DB = 'player_db.csv'
 CONST_TEAM_DB = 'team_db.csv'
+CONST_FIXTURES_EPL = 'fixtures_epl.csv'
 
 #-------------  class definitions -------------
 
@@ -45,7 +46,11 @@ class Club(object):
     def __init__(self, name, country, reputation):
         self.name = name
         self.country = country
-        self.reputation = reputation
+        self.training = {
+                'defending' : 0,
+                'passing' : 0,
+                'attacking' : 0
+                }
         self.squad = []
         self.points = 0
         self.wins = 0
@@ -80,10 +85,13 @@ class Country(object):
 
 class Match(object):
 
-    def __init__(self, home, away, date):
+    def __init__(self, home, away, date, league):
         self.home_team = home
         self.away_team = away
         self.date = date
+        self.league = league
+        self.home_score = 0
+        self.away_score = 0
 
         # these should be made into one home_squad dict instead of several lists
         self.home_squad_gk = []
@@ -119,7 +127,7 @@ class Match(object):
         picked = []
         prev_pos = 0
         num_pos = count_pos(club,pos) # number of players in the position
-        print(player_by_position(pos, club))
+        player_by_position(pos, club)
         if pos == 'defender':
             f = formation[0] # f = number of positions available
             prev_pos = count_pos(club,'goalkeeper') # get start of search index
@@ -216,7 +224,7 @@ class Match(object):
                     j+=1
 
     def result(self):
-        self.result = result
+        self.result = ""
 
     def play_match(self):
         pass
@@ -314,10 +322,9 @@ def print_442(match, side):
             print("  You haven't picked your line-up yet. Type <pick match squad> to start.")
 
 
-
 def player_by_position(pos, club):
     template = "{0:>8}{1:1}{2:30}{3:15}{4:4}{5:>20}"
-    print(" ", pos.upper())
+    print("\n ", pos.upper())
     print("")
     print(template.format("NUMBER", "", "NAME", "POSITION", " AGE", "COUNTRY"))
     for i in range(len(club.squad)):
@@ -357,9 +364,11 @@ def print_help():
             "help\t\t\tShow this help dialog\n",
             "clear\t\t\tClear the screen\n",
             "exit\t\t\tExit the application\n",
+            "\n",
             "player search\t\tSearch for a player using name, team or country\n",
             "squad list\t\tSearch for a team to display the squad list\n",
             "club fixtures\t\tShow the fixtures of a specific team\n",
+            "fixture search\t\tSearch fixture by teams\n",
             "pick match squad\tPick the squad for the next game\n",
             "show match squad\tShow the line-up for the next game\n",
             "print table\t\tPrint the season's league table"
@@ -392,16 +401,16 @@ def calculate_age(born):
     elapsed_years = years_difference - int(is_before_birthday)
     return elapsed_years
 
-# add teams from DB to array of Clubs objects
+# add teams from DB to list of Clubs objects
 def populate_league():
     with open(CONST_TEAM_DB, 'rt') as f:
         reader = csv.reader(f, delimiter=',')
         for row in reader:
             for field in row:
-                clubs.append(Club(row[0],row[1],row[2])) # add club to to clubs array
+                clubs.append(Club(row[0],row[1],row[2])) # add club to to clubs list
                 break
 
-# add players to the clubs in the clubs[] array of objects
+# add players to the clubs in the clubs[] list of objects
 def populate_teams():
     with open(CONST_PLAYER_DB, 'rt') as f:
         reader = csv.reader(f, delimiter=',')
@@ -458,13 +467,50 @@ def sub(sub_out, sub_in):
         else:
             print("That player is not on the field.")
 
+def add_fixtures(league):
+    with open(CONST_FIXTURES_EPL, 'rt') as f:
+        reader = csv.reader(f, delimiter=',')
+        for row in reader:
+            for field in row:
+                fixtures.append(Match(row[1],row[2],row[0],league)) # add fixtures to the fixtures list
+                break
+
+def club_fixtures(club,fixtures):
+    print("")
+    template = "{0:>25}{1:^5}{2:25}{3:15}"
+    for i in range(len(fixtures)):
+        if club.lower() in fixtures[i].home_team.lower() or\
+                club.lower() in fixtures[i].away_team.lower():
+            if fixtures[i].result == "H" or fixtures[i].result == "T" or fixtures[i].result == "A":
+                print(template.format(fixtures[i].home_team,
+                                      str(fixtures[i].home_score)+"-"+str(fixtures[i].away_score),
+                                      fixtures[i].away_team, fixtures[i].date))
+            else:
+                print(template.format(fixtures[i].home_team, "v", fixtures[i].away_team, fixtures[i].date))
+
+def search_fixture(fixtures):
+    team_one = input("\n  Enter the first team to search for: ")
+    team_two = input("  Enter the second team to search for: ")
+    print("")
+    template = "{0:>25}{1:^5}{2:25}{3:15}"
+    for i in range(len(fixtures)):
+        if team_one.lower() in fixtures[i].home_team.lower() and team_two.lower() in fixtures[i].away_team.lower() or team_one.lower() in fixtures[i].away_team.lower() and team_two.lower() in fixtures[i].home_team.lower():
+            if fixtures[i].result == "H" or fixtures[i].result == "T" or fixtures[i].result == "A":
+                print(template.format(fixtures[i].home_team,
+                                      str(fixtures[i].home_score)+"-"+str(fixtures[i].away_score),
+                                      fixtures[i].away_team, fixtures[i].date))
+            else:
+                print(template.format(fixtures[i].home_team, "v", fixtures[i].away_team, fixtures[i].date))
+
 
 #------------- main program -------------
 clubs = []
+fixtures = []
 populate_league()
 populate_teams()
+add_fixtures('EPL')
 clear_screen()
-match_120816 = Match('CHELSEA','ARSENAL','12.08.2016')
+match_120816 = Match('CHELSEA','ARSENAL','12.08.2016', 'EPL')
 while True:
     inp = input("\n  What would you like to do? ")
     if inp.lower() == "help":
@@ -485,7 +531,7 @@ while True:
         clear_screen()
     elif inp.lower() == "club fixtures":
         search_string = input("\n Enter team to search for: ")
-        club_fixtures(search_string)
+        club_fixtures(search_string, fixtures)
     elif inp.lower() == "print table":
         print_league_table()
     elif inp.lower() == "squad list":
@@ -504,6 +550,8 @@ while True:
         pick_match_squad(clubs[3], match_120816)
     elif inp.lower() == "show match squad":
         show_match_squad(clubs[3], match_120816, '442')
+    elif inp.lower() == "fixture search":
+        search_fixture(fixtures)
     elif inp.lower() == "exit":
         confirm = input("\n  Are you sure you want to exit? (Y/n)  ")
         if confirm.lower() == 'y' or confirm.lower() == 'yes':

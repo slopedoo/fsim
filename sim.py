@@ -358,8 +358,8 @@ def print_help():
             "clear\t\t\tClear the screen\n",
             "exit\t\t\tExit the application\n",
             "player search\t\tSearch for a player using name, team or country\n",
-            "team search\t\tSearch for a team using name\n",
             "squad list\t\tSearch for a team to display the squad list\n",
+            "club fixtures\t\tShow the fixtures of a specific team\n",
             "pick match squad\tPick the squad for the next game\n",
             "show match squad\tShow the line-up for the next game\n",
             "print table\t\tPrint the season's league table"
@@ -371,9 +371,9 @@ def player_output(name, country, dob, club, position, number):
             "\n  | \n  |  Player Name:\t",name,
             "\n  |  Player Number:\t",number,
             "\n  |  Player Position:\t",position,
-            "\n  |\n  |  \tDate of Birth:\t",dob,age,"years old."
-            "\n  |  \tCountry:\t",country,
-            "\n  |  \tClub:\t\t",club,
+            "\n  |\n  |  Date of Birth:\t",dob,age,"years old."
+            "\n  |  Country:\t\t",country,
+            "\n  |  Club:\t\t",club,
             "\n  |_______________________________________________________________________________")
 
 def print_league_table():
@@ -426,7 +426,7 @@ def search_player(search_string):
             for field in row:
                 field = ''.join(c for c in unicodedata.normalize('NFD', field)
                         if unicodedata.category(c) != 'Mn') # remove accents from search results for easier searching
-                if search_string.capitalize() in field:
+                if search_string.title() in field:
                     player_output(row[0],row[1],row[2],row[3],row[4],row[5])
 
 # search club and print the roster
@@ -474,7 +474,7 @@ while True:
     elif inp.lower() == "player search":
         print("\n",82*"-")
         print("\n Search for a player using name, club or country. Type back to return to main menu.")
-        search_string = ""
+        search_string = " "
         while search_string.lower() != "back":
             if search_string.lower() == "clear":
                 clear_screen()
@@ -483,19 +483,20 @@ while True:
             search_string = input("\n Enter player to search for: ")
             search_player(search_string)
         clear_screen()
-    elif inp.lower() == "team search":
-        search_team()
+    elif inp.lower() == "club fixtures":
+        search_string = input("\n Enter team to search for: ")
+        club_fixtures(search_string)
     elif inp.lower() == "print table":
         print_league_table()
     elif inp.lower() == "squad list":
-        print("\n Search for a club's squad list using the club name. Type back to return to main menu.")
-        search_string = ""
+        print("\n  Search for a club's squad list using the club name. Type back to return to main menu.")
+        search_string = " "
         while search_string.lower() != "back":
             if search_string.lower() == "clear":
                 clear_screen()
             elif search_string.lower() == "":
-                print("Please enter a valid search string.")
-            search_string = input("\n Enter team to search for: ")
+                print("  Please enter a valid search string.")
+            search_string = input("\n  Enter team to search for: ")
             search_club(search_string, clubs)
         clear_screen()
         search_club(search_string, clubs)

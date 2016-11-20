@@ -9,6 +9,9 @@ import sys
 import csv
 import os
 import unicodedata
+import time
+import random
+import re
 from datetime import date
 from datetime import datetime
 #from pudb import set_trace; set_trace()
@@ -23,6 +26,25 @@ CONST_TEAM_DB = 'team_db.csv'
 CONST_FIXTURES_EPL = 'fixtures_epl.csv'
 
 #-------------  class definitions -------------
+
+class Reprinter:
+    def __init__(self):
+        self.text = ''
+
+    def moveup(self, lines):
+        for _ in range(lines):
+            sys.stdout.write("\x1b[A")
+
+    def reprint(self, text):
+        # Clear previous text by overwritig non-spaces with spaces
+        self.moveup(self.text.count("\n"))
+        sys.stdout.write(re.sub(r"[^\s]", " ", self.text))
+
+        # Print new text
+        lines = min(self.text.count("\n"), text.count("\n"))
+        self.moveup(lines)
+        sys.stdout.write(text)
+        self.text = text
 
 class Player(object):
 
@@ -92,6 +114,9 @@ class Match(object):
         self.league = league
         self.home_score = 0
         self.away_score = 0
+        self.match_stats = { 'possession' : [50,50],
+                             'shots' : [0,0],
+                             'fouls' : [0,0] }
 
         # these should be made into one home_squad dict instead of several lists
         self.home_squad_gk = []
@@ -227,9 +252,64 @@ class Match(object):
         self.result = ""
 
     def play_match(self):
-        pass
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("\n Welcome to today's match on", self.date)
+        print(" Today it is",self.home_team.capitalize(), "v", self.away_team.capitalize())
+        print("")
+        sec = min = 0 # start match at 0:00
+        end = CONST_MINS_PER_GAME
+        template = "{0:35}{1:35}"
+        reprinter = Reprinter()
+        while min <= end: # run match until 90 mins
+            time.sleep(0.001)
+            event_check(self, min, sec, reprinter)
+            print(template.format(str(min)+":"+str(sec).zfill(2), str(self.home_score)+"-"+str(self.away_score)), end="\r ")
+            if sec == 59: # 60 sec == 1 min
+                min += 1
+                sec = 0
+            else:
+                sec += 1
+            if min == 45 and sec == 0:
+                print(" --- Half time. The score is", str(self.home_score)+"-"+str(self.away_score), "--- ")
+                input(" -- Press enter to start 2nd half. -- ")
+                os.system('cls' if os.name == 'nt' else 'clear')
+                print("\n Welcome to today's match on", self.date)
+                print(" Today it is",self.home_team.capitalize(), "v", self.away_team.capitalize())
+                print("")
+        print("\n\n\n\n\n FULL TIME!")
+        print(" Final result:", self.home_team.capitalize(), self.home_score, "-", self.away_score, self.away_team.capitalize())
+
 
 #------------- function definitions -------------
+
+# match engine in its infancy
+def event_check(match, min, sec, reprinter):
+    num_lines = 0
+    if random.randrange(0,1000) > 995: # home team has the ball
+        time.sleep(1)
+        sys.stdout.write("\n "+match.home_team.capitalize()+" controls the ball.")
+        sys.stdout.flush()
+        num_lines += 1
+        if random.randrange(0,1000) > 997: # home team scores
+            sys.stdout.write("\n "+match.home_team.capitalize()+" goal!")
+            sys.stdout.flush()
+            match.home_score += 1
+            num_lines += 1
+            moveup(num_lines)
+            return
+    if random.randrange(0,1000) > 997: # away team has the ball
+        time.sleep(1)
+        sys.stdout.write("\n "+match.away_team.capitalize()+" controls the ball.")
+        sys.stdout.flush()
+        num_lines += 1
+        if random.randrange(0,1000) > 999: # away team scores
+            sys.stdout.write("\n "+match.away_team.capitalize()+" goal!")
+            sys.stdout.flush()
+            match.away_score += 1
+            num_lines += 1
+            moveup(num_lines)
+            return
+    reprinter.moveup(num_lines)
 
 def pos_names(pos, formation, j):
     if pos == 'defender' and formation == '442':
@@ -480,11 +560,11 @@ def club_fixtures(club,fixtures):
     template = "{0:>25}{1:^5}{2:25}{3:15}"
     for i in range(len(fixtures)):
         if club.lower() in fixtures[i].home_team.lower() or\
-                club.lower() in fixtures[i].away_team.lower():
-            if fixtures[i].result == "H" or fixtures[i].result == "T" or fixtures[i].result == "A":
-                print(template.format(fixtures[i].home_team,
-                                      str(fixtures[i].home_score)+"-"+str(fixtures[i].away_score),
-                                      fixtures[i].away_team, fixtures[i].date))
+                club.lower() in fixtures[i].away_team.lower(): # if club is either home or away team, print the fixture
+            if fixtures[i].result == "H" or fixtures[i].result == "T" or fixtures[i].result == "A": # if the fixture has been played
+                print(template.format(fixtures[i].home_team,                                        # and has a result, print it
+                      str(fixtures[i].home_score)+"-"+str(fixtures[i].away_score),
+                      fixtures[i].away_team, fixtures[i].date))
             else:
                 print(template.format(fixtures[i].home_team, "v", fixtures[i].away_team, fixtures[i].date))
 
@@ -497,8 +577,8 @@ def search_fixture(fixtures):
         if team_one.lower() in fixtures[i].home_team.lower() and team_two.lower() in fixtures[i].away_team.lower() or team_one.lower() in fixtures[i].away_team.lower() and team_two.lower() in fixtures[i].home_team.lower():
             if fixtures[i].result == "H" or fixtures[i].result == "T" or fixtures[i].result == "A":
                 print(template.format(fixtures[i].home_team,
-                                      str(fixtures[i].home_score)+"-"+str(fixtures[i].away_score),
-                                      fixtures[i].away_team, fixtures[i].date))
+                      str(fixtures[i].home_score)+"-"+str(fixtures[i].away_score),
+                      fixtures[i].away_team, fixtures[i].date))
             else:
                 print(template.format(fixtures[i].home_team, "v", fixtures[i].away_team, fixtures[i].date))
 
@@ -511,6 +591,7 @@ populate_teams()
 add_fixtures('EPL')
 clear_screen()
 match_120816 = Match('CHELSEA','ARSENAL','12.08.2016', 'EPL')
+match_120816.play_match()
 while True:
     inp = input("\n  What would you like to do? ")
     if inp.lower() == "help":

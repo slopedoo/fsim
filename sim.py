@@ -311,6 +311,48 @@ def event_check(match, min, sec, reprinter):
             return
     reprinter.moveup(num_lines)
 
+def posession():
+    pass
+
+def attack():
+    pass
+
+def chance():
+    pass
+
+def shot():
+    pass
+
+def goal():
+    pass
+
+def miss():
+    pass
+
+def corner():
+    pass
+
+def tackle():
+    pass
+
+def foul():
+    pass
+
+def freekick():
+    pass
+
+def penalty():
+    pass
+
+def yellow_card():
+    pass
+
+def red_card():
+    pass
+
+def counter_attack():
+    pass
+
 def pos_names(pos, formation, j):
     if pos == 'defender' and formation == '442':
         if j == 0:
